@@ -91,14 +91,6 @@ class OutputWebSearch(Output):
     class Config:
         title = "Web Search "
 
-class OutputColors(Output):
-    name: Literal["outputDetections"] = "outputDetections"
-    value: List[DominantColor]
-    type: Literal["list"] = "list"
-
-    class Config:
-        title = "Colors"
-
 class StorageSource(Config):
     name: Literal["storageSource"] = "storageSource"
     value: int
