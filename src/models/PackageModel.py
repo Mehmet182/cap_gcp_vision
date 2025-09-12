@@ -1,8 +1,8 @@
 
 from pydantic import Field, validator
 from typing import List, Optional, Union, Literal
-from sdks.novavision.src.base.model import Package, Image, Inputs, Configs, Outputs, Response, Request, Output, Input, Config
-
+from sdks.novavision.src.base.model import Package, Image, Inputs, Configs, Outputs, Response, Request, Output, Input, Config, Detection, KeyPoints
+from pydantic import BaseModel
 
 class InputImage(Input):
     name: Literal["inputImage"] = "inputImage"
@@ -21,105 +21,164 @@ class InputImage(Input):
         title = "Image"
 
 
-class OutputImage(Output):
-    name: Literal["outputImage"] = "outputImage"
-    value: Union[List[Image],Image]
-    type: str = "object"
+class RGBColor(BaseModel):
+    red: float
+    green: float
+    blue: float
+    alpha: Optional[float] = 1.0  # Eğer alpha eksikse varsayılan 1.0 olsun
 
-    @validator("type", pre=True, always=True)
-    def set_type_based_on_value(cls, value, values):
-        value = values.get('value')
-        if isinstance(value, Image):
-            return "object"
-        elif isinstance(value, list):
-            return "list"
+
+class DominantColor(BaseModel):
+    color: RGBColor
+    score: float
+    pixelFraction: float
+
+class KeyPoints(KeyPoints):
+    confidence: Optional[float] = None
+
+
+class Detection(Detection):
+    keyPoints: Optional[List[KeyPoints]] = None
+    imgUID: Optional[str] = None
+    segmentType: Optional[str] = None
+
+class OutputDetections(Output):
+    name: Literal["outputDetections"] = "outputDetections"
+    value: List[Detection]
+    type: Literal["list"] = "list"
 
     class Config:
-        title = "Image"
+        title = "Detections"
+
+class OutputColors(Output):
+    name: Literal["outputDetections"] = "outputDetections"
+    value: List[DominantColor]
+    type: Literal["list"] = "list"
+
+    class Config:
+        title = "Colors"
 
 
-class KeepSideFalse(Config):
-    name: Literal["False"] = "False"
-    value: Literal[False] = False
-    type: Literal["bool"] = "bool"
+class StorageSource(Config):
+    name: Literal["storageSource"] = "storageSource"
+    value: int
+    type: Literal["number"] = "number"
+    field: Literal["filePicker"] = "filePicker"
+
+    class Config:
+        json_schema_extra = {
+            "class": "portalium\\storage\\widgets\\FilePicker",
+            "options": {
+                "multiple": 0,
+                "returnAttribute": [
+                    "name"
+                ],
+                "name": "app::Object_wide"
+            }
+        }
+        title = "Storage Source"
+
+
+class StoragePath(Config):
+    name: Literal["storagePath"] = "storagePath"
+    value: str
+    type: Literal["string"] = "string"
+    field: Literal["textInput"] = "textInput"
+
+    class Config:
+        title = "File Name"
+
+
+class ConfigStorage(Config):
+    name: Literal["ConfigStorage"] = "ConfigStorage"
+    storageSource: StorageSource
+    value: Literal["ConfigStorage"] = "ConfigStorage"
+    type: Literal["string"] = "string"
     field: Literal["option"] = "option"
 
     class Config:
-        title = "Disable"
+        title = "Storage Source"
 
 
-class KeepSideTrue(Config):
-    name: Literal["True"] = "True"
-    value: Literal[True] = True
-    type: Literal["bool"] = "bool"
+class ConfigPath(Config):
+    name: Literal["ConfigPath"] = "ConfigPath"
+    storagePath: StoragePath
+    value: Literal["ConfigPath"] = "ConfigPath"
+    type: Literal["string"] = "string"
     field: Literal["option"] = "option"
 
     class Config:
-        title = "Enable"
+        title = "Local Path"
 
 
-class KeepSideBBox(Config):
+class TokenSelection(Config):
     """
-        Rotate image without catting off sides.
+        Guide: https://docs.google.com/document/d/1JVK_cOYd0MJDi2mqfRRGXOW-09pIYx2pXHueO-E8qmY/edit?usp=sharing
     """
-    name: Literal["KeepSide"] = "KeepSide"
-    value: Union[KeepSideTrue, KeepSideFalse]
+    name: Literal["tokenSelection"] = "tokenSelection"
+    value: Union[ConfigPath, ConfigStorage]
     type: Literal["object"] = "object"
-    field: Literal["dropdownlist"] = "dropdownlist"
+    field: Literal["dependentDropdownlist"] = "dependentDropdownlist"
+    restart: Literal[True] = True
 
     class Config:
-        title = "Keep Sides"
+        title = "Token Source Selection"
 
-
-class Degree(Config):
+class MinConfidence(Config):
     """
-        Positive angles specify counterclockwise rotation while negative angles indicate clockwise rotation.
+       Sets how sure the model must be about a prediction.
     """
-    name: Literal["Degree"] = "Degree"
-    value: int = Field(ge=-359.0, le=359.0,default=0)
+    name: Literal["minConfidence"] = "minConfidence"
+    value: float = Field(default=0.3, ge=0, le=1)
     type: Literal["number"] = "number"
     field: Literal["textInput"] = "textInput"
-    placeHolder: Literal["[-359, 359]"] = "[-359, 359]"
 
     class Config:
-        title = "Angle"
+        title = "Min Confidence"
+
+class Threshold(Config):
+    """
+       Sets how sure the model must be about a prediction.
+    """
+    name: Literal["threshold"] = "threshold"
+    value: float = Field(default=0.3, ge=0, le=1)
+    type: Literal["number"] = "number"
+    field: Literal["textInput"] = "textInput"
+
+    class Config:
+        title = "Threshold"
 
 
-class PackageInputs(Inputs):
+class LogoDetectionInputs(Inputs):
     inputImage: InputImage
 
-
-class PackageConfigs(Configs):
-    degree: Degree
-    drawBBox: KeepSideBBox
+class LogoDetectionConfigs(Configs):
+    tokenSelection: TokenSelection
 
 
-class PackageOutputs(Outputs):
-    outputImage: OutputImage
+class LogoDetectionOutputs(Outputs):
+    outputDetections: OutputDetections
 
-
-class PackageRequest(Request):
-    inputs: Optional[PackageInputs]
-    configs: PackageConfigs
+class LogoDetectionRequest(Request):
+    inputs: Optional[LogoDetectionInputs]
+    configs: LogoDetectionConfigs
 
     class Config:
         json_schema_extra = {
             "target": "configs"
         }
 
+class LogoDetectionResponse(Response):
+    outputs: LogoDetectionOutputs
 
-class PackageResponse(Response):
-    outputs: PackageOutputs
-
-
-class PackageExecutor(Config):
-    name: Literal["Package"] = "Package"
-    value: Union[PackageRequest, PackageResponse]
+class LogoDetectionExecutor(Config):
+    name: Literal["LogoDetection"] = "LogoDetection"
+    value: Union[LogoDetectionRequest, LogoDetectionResponse]
     type: Literal["object"] = "object"
     field: Literal["option"] = "option"
 
     class Config:
-        title = "Package"
+        title = "Logo Detection"
         json_schema_extra = {
             "target": {
                 "value": 0
@@ -127,17 +186,123 @@ class PackageExecutor(Config):
         }
 
 
+class DetectionLandmarksInputs(Inputs):
+    inputImage: InputImage
+
+class DetectionLandmarksConfigs(Configs):
+    tokenSelection: TokenSelection
+    minConfidence:MinConfidence
+
+class DetectionLandmarksOutputs(Outputs):
+    outputDetections: OutputDetections
+
+class DetectionLandmarksRequest(Request):
+    inputs: Optional[DetectionLandmarksInputs]
+    configs: DetectionLandmarksConfigs
+
+    class Config:
+        json_schema_extra = {
+            "target": "configs"
+        }
+
+class DetectionLandmarksResponse(Response):
+    outputs: DetectionLandmarksOutputs
+
+class DetectionLandmarksExecutor(Config):
+    name: Literal["DetectionLandmarks"] = "DetectionLandmarks"
+    value: Union[DetectionLandmarksRequest, DetectionLandmarksResponse]
+    type: Literal["object"] = "object"
+    field: Literal["option"] = "option"
+
+    class Config:
+        title = "Detection Landmarks"
+        json_schema_extra = {
+            "target": {
+                "value": 0
+            }
+        }
+
+
+class LabelDetectionInputs(Inputs):
+    inputImage: InputImage
+
+class LabelDetectionConfigs(Configs):
+    tokenSelection: TokenSelection
+    Threshold:Threshold
+
+class LabelDetectionOutputs(Outputs):
+    outputDetections: OutputDetections
+
+class LabelDetectionRequest(Request):
+    inputs: Optional[LabelDetectionInputs]
+    configs: LabelDetectionConfigs
+
+    class Config:
+        json_schema_extra = {
+            "target": "configs"
+        }
+
+class LabelDetectionResponse(Response):
+    outputs: LabelDetectionOutputs
+
+class LabelDetectionExecutor(Config):
+    name: Literal["LabelDetection"] = "LabelDetection"
+    value: Union[LabelDetectionRequest, LabelDetectionResponse]
+    type: Literal["object"] = "object"
+    field: Literal["option"] = "option"
+
+    class Config:
+        title = "label Detection"
+        json_schema_extra = {
+            "target": {
+                "value": 0
+            }
+        }
+
+
+class ImagePropertiesInputs(Inputs):
+    inputImage: InputImage
+
+class ImagePropertiesConfigs(Configs):
+    tokenSelection: TokenSelection
+
+class ImagePropertiesOutputs(Outputs):
+    outputColors: OutputColors
+
+class ImagePropertiesRequest(Request):
+    inputs: Optional[ImagePropertiesInputs]
+    configs: ImagePropertiesConfigs
+
+    class Config:
+        json_schema_extra = {
+            "target": "configs"
+        }
+
+class ImagePropertiesResponse(Response):
+    outputs: ImagePropertiesOutputs
+
+class ImagePropertiesExecutor(Config):
+    name: Literal["ImageProperties"] = "ImageProperties"
+    value: Union[ImagePropertiesRequest, ImagePropertiesResponse]
+    type: Literal["object"] = "object"
+    field: Literal["option"] = "option"
+
+    class Config:
+        title = "Image Properties"
+        json_schema_extra = {
+            "target": {
+                "value": 0
+            }
+        }
+
 class ConfigExecutor(Config):
     name: Literal["ConfigExecutor"] = "ConfigExecutor"
-    value: Union[PackageExecutor]
+    value: Union[ImagePropertiesExecutor,LabelDetectionExecutor,DetectionLandmarksExecutor,LogoDetectionExecutor]
     type: Literal["executor"] = "executor"
     field: Literal["dependentDropdownlist"] = "dependentDropdownlist"
 
     class Config:
-        title = "Task"
-        json_schema_extra = {
-            "target": "value"
-        }
+        title = "Type"
 
 
 class PackageConfigs(Configs):
@@ -146,5 +311,5 @@ class PackageConfigs(Configs):
 
 class PackageModel(Package):
     configs: PackageConfigs
-    type: Literal["component"] = "component"
-    name: Literal["Package"] = "Package"
+    type: Literal["capsule"] = "capsule"
+    name: Literal["GcpVision"] = "GcpVision"
