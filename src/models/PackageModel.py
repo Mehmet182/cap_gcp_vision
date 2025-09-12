@@ -1,8 +1,8 @@
 
 from pydantic import Field, validator
 from typing import List, Optional, Union, Literal
-from sdks.novavision.src.base.model import Package, Image, Inputs, Configs, Outputs, Response, Request, Output, Input, Config
-
+from sdks.novavision.src.base.model import Package, Image, Inputs, Configs, Outputs, Response, Request, Output, Input, Config, Detection, KeyPoints
+from pydantic import BaseModel ,HttpUrl
 
 class InputImage(Input):
     name: Literal["inputImage"] = "inputImage"
@@ -20,106 +20,308 @@ class InputImage(Input):
     class Config:
         title = "Image"
 
+class WebImage(BaseModel):
+    url: HttpUrl
 
-class OutputImage(Output):
-    name: Literal["outputImage"] = "outputImage"
-    value: Union[List[Image],Image]
-    type: str = "object"
+class WebPage(BaseModel):
+    url: HttpUrl
+    full_matching_images: Optional[List[WebImage]] = []
+    partial_matching_images: Optional[List[WebImage]] = []
 
-    @validator("type", pre=True, always=True)
-    def set_type_based_on_value(cls, value, values):
-        value = values.get('value')
-        if isinstance(value, Image):
-            return "object"
-        elif isinstance(value, list):
-            return "list"
+class WebEntity(BaseModel):
+    score: float
+    description: Optional[str] = None
 
-    class Config:
-        title = "Image"
+class BestGuessLabel(BaseModel):
+    label: str
 
-
-class KeepSideFalse(Config):
-    name: Literal["False"] = "False"
-    value: Literal[False] = False
-    type: Literal["bool"] = "bool"
-    field: Literal["option"] = "option"
-
-    class Config:
-        title = "Disable"
+class WebDetection(BaseModel):
+    best_guess_labels: Optional[List[BestGuessLabel]] = []
+    pages_with_matching_images: Optional[List[WebPage]] = []
+    web_entities: Optional[List[WebEntity]] = []
+    visually_similar_images: Optional[List[WebImage]] = []
 
 
-class KeepSideTrue(Config):
-    name: Literal["True"] = "True"
-    value: Literal[True] = True
-    type: Literal["bool"] = "bool"
-    field: Literal["option"] = "option"
-
-    class Config:
-        title = "Enable"
+class SafeSearchResult(BaseModel):
+    adult: str
+    medical: str
+    spoofed: str
+    violence: str
+    racy: str
 
 
-class KeepSideBBox(Config):
-    """
-        Rotate image without catting off sides.
-    """
-    name: Literal["KeepSide"] = "KeepSide"
-    value: Union[KeepSideTrue, KeepSideFalse]
-    type: Literal["object"] = "object"
-    field: Literal["dropdownlist"] = "dropdownlist"
+class KeyPoints(KeyPoints):
+    confidence: Optional[float] = None
+
+
+class Detection(Detection):
+    keyPoints: Optional[List[KeyPoints]] = None
+    imgUID: Optional[str] = None
+    segmentType: Optional[str] = None
+
+class OutputData(Output):
+    name: Literal["outputData"] = "outputData"
+    value:  List[str] 
+    type: Literal["string"] = "string"
 
     class Config:
-        title = "Keep Sides"
+        title = "Data"
+
+class OutputDetections(Output):
+    name: Literal["outputDetections"] = "outputDetections"
+    value: List[Detection]
+    type: Literal["list"] = "list"
+
+    class Config:
+        title = "Detections"
 
 
-class Degree(Config):
-    """
-        Positive angles specify counterclockwise rotation while negative angles indicate clockwise rotation.
-    """
-    name: Literal["Degree"] = "Degree"
-    value: int = Field(ge=-359.0, le=359.0,default=0)
+class OutputSafeSearch(Output):
+    name: Literal["outputSafeSearch"] = "outputSafeSearch"
+    value: List[SafeSearchResult]
+    type: Literal["list"] = "list"
+
+    class Config:
+        title = "Safe Search"
+
+class OutputWebSearch(Output):
+    name: Literal["outputWebSearch"] = "outputWebSearch"
+    value: List[WebDetection]
+    type: Literal["list"] = "list"
+
+    class Config:
+        title = "Web Search "
+
+
+class StorageSource(Config):
+    name: Literal["storageSource"] = "storageSource"
+    value: int
     type: Literal["number"] = "number"
-    field: Literal["textInput"] = "textInput"
-    placeHolder: Literal["[-359, 359]"] = "[-359, 359]"
+    field: Literal["filePicker"] = "filePicker"
 
     class Config:
-        title = "Angle"
+        json_schema_extra = {
+            "class": "portalium\\storage\\widgets\\FilePicker",
+            "options": {
+                "multiple": 0,
+                "returnAttribute": [
+                    "name"
+                ],
+                "name": "app::Object_wide"
+            }
+        }
+        title = "Storage Source"
+
+class SourceUrl(Config):
+    """
+    PDF URL
+    """
+    name: Literal["sourceUrl"] = "sourceUrl"
+    value: str
+    type: Literal["string"] = "string"
+    field: Literal["textInput"] = "textInput"
+
+    class Config:
+        title = "File Source Url"
 
 
-class PackageInputs(Inputs):
+class DestinationUrl(Config):
+    """
+    Destination URL
+    """
+    name: Literal["destinationUrl"] = "destinationUrl"
+    value: str
+    type: Literal["string"] = "string"
+    field: Literal["textInput"] = "textInput"
+
+    class Config:
+        title = "Destination Url"
+
+class StoragePath(Config):
+    name: Literal["storagePath"] = "storagePath"
+    value: str
+    type: Literal["string"] = "string"
+    field: Literal["textInput"] = "textInput"
+
+    class Config:
+        title = "File Name"
+
+
+class ConfigStorage(Config):
+    name: Literal["ConfigStorage"] = "ConfigStorage"
+    storageSource: StorageSource
+    value: Literal["ConfigStorage"] = "ConfigStorage"
+    type: Literal["string"] = "string"
+    field: Literal["option"] = "option"
+
+    class Config:
+        title = "Storage Source"
+
+
+class ConfigPath(Config):
+    name: Literal["ConfigPath"] = "ConfigPath"
+    storagePath: StoragePath
+    value: Literal["ConfigPath"] = "ConfigPath"
+    type: Literal["string"] = "string"
+    field: Literal["option"] = "option"
+
+    class Config:
+        title = "Local Path"
+
+
+class TokenSelection(Config):
+    """
+        Guide: https://docs.google.com/document/d/1JVK_cOYd0MJDi2mqfRRGXOW-09pIYx2pXHueO-E8qmY/edit?usp=sharing
+    """
+    name: Literal["tokenSelection"] = "tokenSelection"
+    value: Union[ConfigPath, ConfigStorage]
+    type: Literal["object"] = "object"
+    field: Literal["dependentDropdownlist"] = "dependentDropdownlist"
+    restart: Literal[True] = True
+
+    class Config:
+        title = "Token Source Selection"
+
+
+
+class WebDetectionInputs(Inputs):
     inputImage: InputImage
 
-
-class PackageConfigs(Configs):
-    degree: Degree
-    drawBBox: KeepSideBBox
+class WebDetectionConfigs(Configs):
+    tokenSelection: TokenSelection
 
 
-class PackageOutputs(Outputs):
-    outputImage: OutputImage
+class WebDetectionOutputs(Outputs):
+    outputWebSearch: OutputWebSearch
 
-
-class PackageRequest(Request):
-    inputs: Optional[PackageInputs]
-    configs: PackageConfigs
+class WebDetectionRequest(Request):
+    inputs: Optional[WebDetectionInputs]
+    configs: WebDetectionConfigs
 
     class Config:
         json_schema_extra = {
             "target": "configs"
         }
 
+class WebDetectionResponse(Response):
+    outputs: WebDetectionOutputs
 
-class PackageResponse(Response):
-    outputs: PackageOutputs
-
-
-class PackageExecutor(Config):
-    name: Literal["Package"] = "Package"
-    value: Union[PackageRequest, PackageResponse]
+class WebDetectionExecutor(Config):
+    name: Literal["WebDetection"] = "WebDetection"
+    value: Union[WebDetectionRequest, WebDetectionResponse]
     type: Literal["object"] = "object"
     field: Literal["option"] = "option"
 
     class Config:
-        title = "Package"
+        title = "Web Detection"
+        json_schema_extra = {
+            "target": {
+                "value": 0
+            }
+        }
+
+
+
+class ObjectDetectionInputs(Inputs):
+    inputImage: InputImage
+
+class ObjectDetectionConfigs(Configs):
+    tokenSelection: TokenSelection
+
+class ObjectDetectionOutputs(Outputs):
+    outputDetections: OutputDetections
+
+class ObjectDetectionRequest(Request):
+    inputs: Optional[ObjectDetectionInputs]
+    configs: ObjectDetectionConfigs
+
+    class Config:
+        json_schema_extra = {
+            "target": "configs"
+        }
+
+class ObjectDetectionResponse(Response):
+    outputs: ObjectDetectionOutputs
+
+class ObjectDetectionExecutor(Config):
+    name: Literal["ObjectDetection"] = "ObjectDetection"
+    value: Union[ObjectDetectionRequest, ObjectDetectionResponse]
+    type: Literal["object"] = "object"
+    field: Literal["option"] = "option"
+
+    class Config:
+        title = "Object Detection"
+        json_schema_extra = {
+            "target": {
+                "value": 0
+            }
+        }
+
+
+class SafeSearchInputs(Inputs):
+    inputImage: InputImage
+
+class SafeSearchConfigs(Configs):
+    tokenSelection: TokenSelection
+
+class SafeSearchOutputs(Outputs):
+    outputSafeSearch: OutputSafeSearch
+
+class SafeSearchRequest(Request):
+    inputs: Optional[SafeSearchInputs]
+    configs: SafeSearchConfigs
+
+    class Config:
+        json_schema_extra = {
+            "target": "configs"
+        }
+
+class SafeSearchResponse(Response):
+    outputs: SafeSearchOutputs
+
+class SafeSearchExecutor(Config):
+    name: Literal["SafeSearch"] = "SafeSearch"
+    value: Union[SafeSearchRequest, SafeSearchResponse]
+    type: Literal["object"] = "object"
+    field: Literal["option"] = "option"
+
+    class Config:
+        title = "Safe Search"
+        json_schema_extra = {
+            "target": {
+                "value": 0
+            }
+        }
+
+
+
+class TextDetectFileConfigs(Configs):
+    tokenSelection: TokenSelection
+    sourceUrl:SourceUrl
+    destinationUrl:DestinationUrl
+
+class TextDetectFileOutputs(Outputs):
+    outputData: OutputData
+
+class TextDetectFileRequest(Request):
+    configs: TextDetectFileConfigs
+
+    class Config:
+        json_schema_extra = {
+            "target": "configs"
+        }
+
+class TextDetectFileResponse(Response):
+    outputs: TextDetectFileOutputs
+
+class TextDetectFileExecutor(Config):
+    name: Literal["TextDetectFile"] = "TextDetectFile"
+    value: Union[TextDetectFileRequest, TextDetectFileResponse]
+    type: Literal["object"] = "object"
+    field: Literal["option"] = "option"
+
+    class Config:
+        title = "Text Detection File"
         json_schema_extra = {
             "target": {
                 "value": 0
@@ -129,15 +331,12 @@ class PackageExecutor(Config):
 
 class ConfigExecutor(Config):
     name: Literal["ConfigExecutor"] = "ConfigExecutor"
-    value: Union[PackageExecutor]
+    value: Union[WebDetectionExecutor,ObjectDetectionExecutor,SafeSearchExecutor,TextDetectFileExecutor]
     type: Literal["executor"] = "executor"
     field: Literal["dependentDropdownlist"] = "dependentDropdownlist"
 
     class Config:
-        title = "Task"
-        json_schema_extra = {
-            "target": "value"
-        }
+        title = "Type"
 
 
 class PackageConfigs(Configs):
@@ -146,5 +345,5 @@ class PackageConfigs(Configs):
 
 class PackageModel(Package):
     configs: PackageConfigs
-    type: Literal["component"] = "component"
-    name: Literal["Package"] = "Package"
+    type: Literal["capsule"] = "capsule"
+    name: Literal["GcpVision"] = "GcpVision"
