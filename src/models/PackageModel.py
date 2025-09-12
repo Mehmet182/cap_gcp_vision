@@ -88,7 +88,7 @@ class OutputDetections(Output):
         title = "Detections"
 
 class OutputColors(Output):
-    name: Literal["outputDetections"] = "outputDetections"
+    name: Literal["outputColors"] = "outputColors"
     value: List[DominantColor]
     type: Literal["list"] = "list"
 
