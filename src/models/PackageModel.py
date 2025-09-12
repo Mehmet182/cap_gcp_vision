@@ -33,22 +33,6 @@ class DominantColor(BaseModel):
     score: float
     pixelFraction: float
 
-class KeyPoints(KeyPoints):
-    confidence: Optional[float] = None
-
-
-class Detection(Detection):
-    keyPoints: Optional[List[KeyPoints]] = None
-    imgUID: Optional[str] = None
-    segmentType: Optional[str] = None
-
-class OutputDetections(Output):
-    name: Literal["outputDetections"] = "outputDetections"
-    value: List[Detection]
-    type: Literal["list"] = "list"
-
-    class Config:
-        title = "Detections"
 
 class OutputColors(Output):
     name: Literal["outputDetections"] = "outputDetections"
@@ -124,142 +108,6 @@ class TokenSelection(Config):
     class Config:
         title = "Token Source Selection"
 
-class MinConfidence(Config):
-    """
-       Sets how sure the model must be about a prediction.
-    """
-    name: Literal["minConfidence"] = "minConfidence"
-    value: float = Field(default=0.3, ge=0, le=1)
-    type: Literal["number"] = "number"
-    field: Literal["textInput"] = "textInput"
-
-    class Config:
-        title = "Min Confidence"
-
-class Threshold(Config):
-    """
-       Sets how sure the model must be about a prediction.
-    """
-    name: Literal["threshold"] = "threshold"
-    value: float = Field(default=0.3, ge=0, le=1)
-    type: Literal["number"] = "number"
-    field: Literal["textInput"] = "textInput"
-
-    class Config:
-        title = "Threshold"
-
-
-class LogoDetectionInputs(Inputs):
-    inputImage: InputImage
-
-class LogoDetectionConfigs(Configs):
-    tokenSelection: TokenSelection
-
-
-class LogoDetectionOutputs(Outputs):
-    outputDetections: OutputDetections
-
-class LogoDetectionRequest(Request):
-    inputs: Optional[LogoDetectionInputs]
-    configs: LogoDetectionConfigs
-
-    class Config:
-        json_schema_extra = {
-            "target": "configs"
-        }
-
-class LogoDetectionResponse(Response):
-    outputs: LogoDetectionOutputs
-
-class LogoDetectionExecutor(Config):
-    name: Literal["LogoDetection"] = "LogoDetection"
-    value: Union[LogoDetectionRequest, LogoDetectionResponse]
-    type: Literal["object"] = "object"
-    field: Literal["option"] = "option"
-
-    class Config:
-        title = "Logo Detection"
-        json_schema_extra = {
-            "target": {
-                "value": 0
-            }
-        }
-
-
-class DetectionLandmarksInputs(Inputs):
-    inputImage: InputImage
-
-class DetectionLandmarksConfigs(Configs):
-    tokenSelection: TokenSelection
-    minConfidence:MinConfidence
-
-class DetectionLandmarksOutputs(Outputs):
-    outputDetections: OutputDetections
-
-class DetectionLandmarksRequest(Request):
-    inputs: Optional[DetectionLandmarksInputs]
-    configs: DetectionLandmarksConfigs
-
-    class Config:
-        json_schema_extra = {
-            "target": "configs"
-        }
-
-class DetectionLandmarksResponse(Response):
-    outputs: DetectionLandmarksOutputs
-
-class DetectionLandmarksExecutor(Config):
-    name: Literal["DetectionLandmarks"] = "DetectionLandmarks"
-    value: Union[DetectionLandmarksRequest, DetectionLandmarksResponse]
-    type: Literal["object"] = "object"
-    field: Literal["option"] = "option"
-
-    class Config:
-        title = "Detection Landmarks"
-        json_schema_extra = {
-            "target": {
-                "value": 0
-            }
-        }
-
-
-class LabelDetectionInputs(Inputs):
-    inputImage: InputImage
-
-class LabelDetectionConfigs(Configs):
-    tokenSelection: TokenSelection
-    Threshold:Threshold
-
-class LabelDetectionOutputs(Outputs):
-    outputDetections: OutputDetections
-
-class LabelDetectionRequest(Request):
-    inputs: Optional[LabelDetectionInputs]
-    configs: LabelDetectionConfigs
-
-    class Config:
-        json_schema_extra = {
-            "target": "configs"
-        }
-
-class LabelDetectionResponse(Response):
-    outputs: LabelDetectionOutputs
-
-class LabelDetectionExecutor(Config):
-    name: Literal["LabelDetection"] = "LabelDetection"
-    value: Union[LabelDetectionRequest, LabelDetectionResponse]
-    type: Literal["object"] = "object"
-    field: Literal["option"] = "option"
-
-    class Config:
-        title = "label Detection"
-        json_schema_extra = {
-            "target": {
-                "value": 0
-            }
-        }
-
-
 class ImagePropertiesInputs(Inputs):
     inputImage: InputImage
 
@@ -297,13 +145,15 @@ class ImagePropertiesExecutor(Config):
 
 class ConfigExecutor(Config):
     name: Literal["ConfigExecutor"] = "ConfigExecutor"
-    value: Union[ImagePropertiesExecutor,LabelDetectionExecutor,DetectionLandmarksExecutor,LogoDetectionExecutor]
+    value: Union[ImagePropertiesExecutor]
     type: Literal["executor"] = "executor"
     field: Literal["dependentDropdownlist"] = "dependentDropdownlist"
 
     class Config:
-        title = "Type"
-
+        title = "Task"
+        json_schema_extra = {
+            "target": "value"
+        }
 
 class PackageConfigs(Configs):
     executor: ConfigExecutor
