@@ -6,6 +6,7 @@ from capsules.GcpVision.src.models.PackageModel import PackageModel, PackageConf
 from capsules.GcpVision.src.models.PackageModel import TextDetectionOutputs, TextDetectionResponse, TextDetectionExecutor
 from capsules.GcpVision.src.models.PackageModel import CropHintsOutputs, CropHintsResponse, CropHintsExecutor
 from capsules.GcpVision.src.models.PackageModel import FaceDetectionOutputs, FaceDetectionResponse, FaceDetectionExecutor
+from capsules.GcpVision.src.models.PackageModel import ImagePropertiesOutputs, ImagePropertiesResponse, ImagePropertiesExecutor,OutputColors
 from capsules.GcpVision.src.models.PackageModel import DetectionLandmarksOutputs, DetectionLandmarksResponse, DetectionLandmarksExecutor
 from capsules.GcpVision.src.models.PackageModel import LogoDetectionOutputs, LogoDetectionResponse, LogoDetectionExecutor
 from capsules.GcpVision.src.models.PackageModel import LabelDetectionOutputs, LabelDetectionResponse, LabelDetectionExecutor
@@ -48,6 +49,16 @@ def build_response_face_detection(context):
     packageModel = package.build_model(context)
     return packageModel
 
+def build_response_image_properties(context):
+    outputDetections = OutputColors(value=context.dominant_colors)
+    imagePropertiesOutputs = ImagePropertiesOutputs(outputDetections=outputDetections)
+    imagePropertiesResponse = ImagePropertiesResponse(outputs=imagePropertiesOutputs)
+    imagePropertiesExecutor = ImagePropertiesExecutor(value=imagePropertiesResponse)
+    executor = ConfigExecutor(value=imagePropertiesExecutor)
+    packageConfigs = PackageConfigs(executor=executor)
+    package = PackageHelper(packageModel=PackageModel, packageConfigs=packageConfigs)
+    packageModel = package.build_model(context)
+    return packageModel
 
 def build_response_label_detection(context):
     outputDetections = OutputDetections(value=context.detections)

@@ -20,6 +20,7 @@ class InputImage(Input):
     class Config:
         title = "Image"
 
+
 class WebImage(BaseModel):
     url: HttpUrl
 
@@ -49,6 +50,18 @@ class SafeSearchResult(BaseModel):
     violence: str
     racy: str
 
+class RGBColor(BaseModel):
+    red: float
+    green: float
+    blue: float
+    alpha: Optional[float] = 1.0  # Eğer alpha eksikse varsayılan 1.0 olsun
+
+
+class DominantColor(BaseModel):
+    color: RGBColor
+    score: float
+    pixelFraction: float
+
 class KeyPoints(KeyPoints):
     confidence: Optional[float] = None
 
@@ -74,6 +87,13 @@ class OutputDetections(Output):
     class Config:
         title = "Detections"
 
+class OutputColors(Output):
+    name: Literal["outputDetections"] = "outputDetections"
+    value: List[DominantColor]
+    type: Literal["list"] = "list"
+
+    class Config:
+        title = "Colors"
 
 class OutputSafeSearch(Output):
     name: Literal["outputSafeSearch"] = "outputSafeSearch"
@@ -473,6 +493,40 @@ class LabelDetectionExecutor(Config):
             }
         }
 
+class ImagePropertiesInputs(Inputs):
+    inputImage: InputImage
+
+class ImagePropertiesConfigs(Configs):
+    tokenSelection: TokenSelection
+
+class ImagePropertiesOutputs(Outputs):
+    outputColors: OutputColors
+
+class ImagePropertiesRequest(Request):
+    inputs: Optional[ImagePropertiesInputs]
+    configs: ImagePropertiesConfigs
+
+    class Config:
+        json_schema_extra = {
+            "target": "configs"
+        }
+
+class ImagePropertiesResponse(Response):
+    outputs: ImagePropertiesOutputs
+
+class ImagePropertiesExecutor(Config):
+    name: Literal["ImageProperties"] = "ImageProperties"
+    value: Union[ImagePropertiesRequest, ImagePropertiesResponse]
+    type: Literal["object"] = "object"
+    field: Literal["option"] = "option"
+
+    class Config:
+        title = "Image Properties"
+        json_schema_extra = {
+            "target": {
+                "value": 0
+            }
+        }
 
 
 class FaceDetectionInputs(Inputs):
@@ -587,7 +641,7 @@ class TextDetectionExecutor(Config):
 
 class ConfigExecutor(Config):
     name: Literal["ConfigExecutor"] = "ConfigExecutor"
-    value: Union[TextDetectionExecutor,CropHintsExecutor,FaceDetectionExecutor,LabelDetectionExecutor,DetectionLandmarksExecutor,LogoDetectionExecutor,WebDetectionExecutor,ObjectDetectionExecutor,SafeSearchExecutor,TextDetectFileExecutor]
+    value: Union[TextDetectionExecutor,CropHintsExecutor,FaceDetectionExecutor,ImagePropertiesExecutor,LabelDetectionExecutor,DetectionLandmarksExecutor,LogoDetectionExecutor,WebDetectionExecutor,ObjectDetectionExecutor,SafeSearchExecutor,TextDetectFileExecutor]
     type: Literal["executor"] = "executor"
     field: Literal["dependentDropdownlist"] = "dependentDropdownlist"
 
