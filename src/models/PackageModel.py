@@ -49,19 +49,6 @@ class SafeSearchResult(BaseModel):
     violence: str
     racy: str
 
-
-class RGBColor(BaseModel):
-    red: float
-    green: float
-    blue: float
-    alpha: Optional[float] = 1.0  # Eğer alpha eksikse varsayılan 1.0 olsun
-
-
-class DominantColor(BaseModel):
-    color: RGBColor
-    score: float
-    pixelFraction: float
-
 class KeyPoints(KeyPoints):
     confidence: Optional[float] = None
 
@@ -200,6 +187,18 @@ class TokenSelection(Config):
 
     class Config:
         title = "Token Source Selection"
+
+class MinConfidence(Config):
+    """
+       Sets how sure the model must be about a prediction.
+    """
+    name: Literal["minConfidence"] = "minConfidence"
+    value: float = Field(default=0.3, ge=0, le=1)
+    type: Literal["number"] = "number"
+    field: Literal["textInput"] = "textInput"
+
+    class Config:
+        title = "Min Confidence"
 
 class Threshold(Config):
     """
@@ -370,6 +369,81 @@ class TextDetectFileExecutor(Config):
                 "value": 0
             }
         }
+class LogoDetectionInputs(Inputs):
+    inputImage: InputImage
+
+class LogoDetectionConfigs(Configs):
+    tokenSelection: TokenSelection
+
+
+class LogoDetectionOutputs(Outputs):
+    outputDetections: OutputDetections
+
+class LogoDetectionRequest(Request):
+    inputs: Optional[LogoDetectionInputs]
+    configs: LogoDetectionConfigs
+
+    class Config:
+        json_schema_extra = {
+            "target": "configs"
+        }
+
+class LogoDetectionResponse(Response):
+    outputs: LogoDetectionOutputs
+
+class LogoDetectionExecutor(Config):
+    name: Literal["LogoDetection"] = "LogoDetection"
+    value: Union[LogoDetectionRequest, LogoDetectionResponse]
+    type: Literal["object"] = "object"
+    field: Literal["option"] = "option"
+
+    class Config:
+        title = "Logo Detection"
+        json_schema_extra = {
+            "target": {
+                "value": 0
+            }
+        }
+
+
+class DetectionLandmarksInputs(Inputs):
+    inputImage: InputImage
+
+class DetectionLandmarksConfigs(Configs):
+    tokenSelection: TokenSelection
+    minConfidence:MinConfidence
+
+class DetectionLandmarksOutputs(Outputs):
+    outputDetections: OutputDetections
+
+class DetectionLandmarksRequest(Request):
+    inputs: Optional[DetectionLandmarksInputs]
+    configs: DetectionLandmarksConfigs
+
+    class Config:
+        json_schema_extra = {
+            "target": "configs"
+        }
+
+
+
+class DetectionLandmarksResponse(Response):
+    outputs: DetectionLandmarksOutputs
+
+class DetectionLandmarksExecutor(Config):
+    name: Literal["DetectionLandmarks"] = "DetectionLandmarks"
+    value: Union[DetectionLandmarksRequest, DetectionLandmarksResponse]
+    type: Literal["object"] = "object"
+    field: Literal["option"] = "option"
+
+    class Config:
+        title = "Detection Landmarks"
+        json_schema_extra = {
+            "target": {
+                "value": 0
+            }
+        }
+
 
 class LabelDetectionInputs(Inputs):
     inputImage: InputImage
@@ -408,40 +482,6 @@ class LabelDetectionExecutor(Config):
         }
 
 
-class ImagePropertiesInputs(Inputs):
-    inputImage: InputImage
-
-class ImagePropertiesConfigs(Configs):
-    tokenSelection: TokenSelection
-
-class ImagePropertiesOutputs(Outputs):
-    outputColors: OutputColors
-
-class ImagePropertiesRequest(Request):
-    inputs: Optional[ImagePropertiesInputs]
-    configs: ImagePropertiesConfigs
-
-    class Config:
-        json_schema_extra = {
-            "target": "configs"
-        }
-
-class ImagePropertiesResponse(Response):
-    outputs: ImagePropertiesOutputs
-
-class ImagePropertiesExecutor(Config):
-    name: Literal["ImageProperties"] = "ImageProperties"
-    value: Union[ImagePropertiesRequest, ImagePropertiesResponse]
-    type: Literal["object"] = "object"
-    field: Literal["option"] = "option"
-
-    class Config:
-        title = "Image Properties"
-        json_schema_extra = {
-            "target": {
-                "value": 0
-            }
-        }
 
 class FaceDetectionInputs(Inputs):
     inputImage: InputImage
@@ -555,7 +595,7 @@ class TextDetectionExecutor(Config):
 
 class ConfigExecutor(Config):
     name: Literal["ConfigExecutor"] = "ConfigExecutor"
-    value: Union[TextDetectionExecutor,CropHintsExecutor,FaceDetectionExecutor,ImagePropertiesExecutor,LabelDetectionExecutor,WebDetectionExecutor,ObjectDetectionExecutor,SafeSearchExecutor,TextDetectFileExecutor]
+    value: Union[TextDetectionExecutor,CropHintsExecutor,FaceDetectionExecutor,LabelDetectionExecutor,DetectionLandmarksExecutor,LogoDetectionExecutor,WebDetectionExecutor,ObjectDetectionExecutor,SafeSearchExecutor,TextDetectFileExecutor]
     type: Literal["executor"] = "executor"
     field: Literal["dependentDropdownlist"] = "dependentDropdownlist"
 
