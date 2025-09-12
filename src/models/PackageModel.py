@@ -182,6 +182,17 @@ class TokenSelection(Config):
     class Config:
         title = "Token Source Selection"
 
+class CropAspectRatios(Config):
+    """
+    The aspect ratio defines the width-to-height ratio of the image.
+    """
+    name: Literal["CropAspectRatios"] = "CropAspectRatios"
+    value: float =(Field(default=1.77))
+    type: Literal["string"] = "string"
+    field: Literal["textInput"] = "textInput"
+
+    class Config:
+        title = "Aspect Ratios"
 
 
 class WebDetectionInputs(Inputs):
@@ -329,9 +340,119 @@ class TextDetectFileExecutor(Config):
         }
 
 
+class FaceDetectionInputs(Inputs):
+    inputImage: InputImage
+
+class FaceDetectionConfigs(Configs):
+    tokenSelection: TokenSelection
+
+class FaceDetectionOutputs(Outputs):
+    outputDetections: OutputDetections
+
+class FaceDetectionRequest(Request):
+    inputs: Optional[FaceDetectionInputs]
+    configs: FaceDetectionConfigs
+
+    class Config:
+        json_schema_extra = {
+            "target": "configs"
+        }
+
+class FaceDetectionResponse(Response):
+    outputs: FaceDetectionOutputs
+
+class FaceDetectionExecutor(Config):
+    name: Literal["FaceDetection"] = "FaceDetection"
+    value: Union[FaceDetectionRequest, FaceDetectionResponse]
+    type: Literal["object"] = "object"
+    field: Literal["option"] = "option"
+
+    class Config:
+        title = "Face Detection"
+        json_schema_extra = {
+            "target": {
+                "value": 0
+            }
+        }
+
+
+class CropHintsInputs(Inputs):
+    inputImage: InputImage
+
+class CropHintsConfigs(Configs):
+    tokenSelection: TokenSelection
+    cropAspectRatios:CropAspectRatios
+
+class CropHintsOutputs(Outputs):
+    outputDetections: OutputDetections
+
+class CropHintsRequest(Request):
+    inputs: Optional[CropHintsInputs]
+    configs: CropHintsConfigs
+
+    class Config:
+        json_schema_extra = {
+            "target": "configs"
+        }
+
+class CropHintsResponse(Response):
+    outputs: CropHintsOutputs
+
+class CropHintsExecutor(Config):
+    name: Literal["CropHints"] = "CropHints"
+    value: Union[CropHintsRequest, CropHintsResponse]
+    type: Literal["object"] = "object"
+    field: Literal["option"] = "option"
+
+    class Config:
+        title = "Crop Hints"
+        json_schema_extra = {
+            "target": {
+                "value": 0
+            }
+        }
+
+
+
+class TextDetectionInputs(Inputs):
+    inputImage: InputImage
+
+class TextDetectionConfigs(Configs):
+    tokenSelection: TokenSelection
+
+class TextDetectionOutputs(Outputs):
+    outputData: OutputData
+
+class TextDetectionRequest(Request):
+    inputs: Optional[TextDetectionInputs]
+    configs: TextDetectionConfigs
+
+    class Config:
+        json_schema_extra = {
+            "target": "configs"
+        }
+
+class TextDetectionResponse(Response):
+    outputs: TextDetectionOutputs
+
+class TextDetectionExecutor(Config):
+    name: Literal["TextDetection"] = "TextDetection"
+    value: Union[TextDetectionRequest, TextDetectionResponse]
+    type: Literal["object"] = "object"
+    field: Literal["option"] = "option"
+
+    class Config:
+        title = "Text Detection"
+        json_schema_extra = {
+            "target": {
+                "value": 0
+            }
+        }
+
+
 class ConfigExecutor(Config):
     name: Literal["ConfigExecutor"] = "ConfigExecutor"
-    value: Union[WebDetectionExecutor,ObjectDetectionExecutor,SafeSearchExecutor,TextDetectFileExecutor]
+    value: Union[TextDetectionExecutor,CropHintsExecutor,FaceDetectionExecutor,WebDetectionExecutor,ObjectDetectionExecutor,SafeSearchExecutor,TextDetectFileExecutor]
     type: Literal["executor"] = "executor"
     field: Literal["dependentDropdownlist"] = "dependentDropdownlist"
 
