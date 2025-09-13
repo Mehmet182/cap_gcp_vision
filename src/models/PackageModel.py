@@ -50,6 +50,18 @@ class SafeSearchResult(BaseModel):
     racy: str
 
 
+class RGBColor(BaseModel):
+    red: float
+    green: float
+    blue: float
+    alpha: Optional[float] = 1.0  # Eğer alpha eksikse varsayılan 1.0 olsun
+
+
+class DominantColor(BaseModel):
+    color: RGBColor
+    score: float
+    pixelFraction: float
+
 class KeyPoints(KeyPoints):
     confidence: Optional[float] = None
 
@@ -92,6 +104,13 @@ class OutputWebSearch(Output):
     class Config:
         title = "Web Search "
 
+class OutputColors(Output):
+    name: Literal["outputDetections"] = "outputDetections"
+    value: List[DominantColor]
+    type: Literal["list"] = "list"
+
+    class Config:
+        title = "Colors"
 
 class StorageSource(Config):
     name: Literal["storageSource"] = "storageSource"
@@ -181,6 +200,19 @@ class TokenSelection(Config):
 
     class Config:
         title = "Token Source Selection"
+
+class Threshold(Config):
+    """
+       Sets how sure the model must be about a prediction.
+    """
+    name: Literal["threshold"] = "threshold"
+    value: float = Field(default=0.3, ge=0, le=1)
+    type: Literal["number"] = "number"
+    field: Literal["textInput"] = "textInput"
+
+    class Config:
+        title = "Threshold"
+
 
 class CropAspectRatios(Config):
     """
@@ -339,6 +371,77 @@ class TextDetectFileExecutor(Config):
             }
         }
 
+class LabelDetectionInputs(Inputs):
+    inputImage: InputImage
+
+class LabelDetectionConfigs(Configs):
+    tokenSelection: TokenSelection
+    Threshold:Threshold
+
+class LabelDetectionOutputs(Outputs):
+    outputDetections: OutputDetections
+
+class LabelDetectionRequest(Request):
+    inputs: Optional[LabelDetectionInputs]
+    configs: LabelDetectionConfigs
+
+    class Config:
+        json_schema_extra = {
+            "target": "configs"
+        }
+
+class LabelDetectionResponse(Response):
+    outputs: LabelDetectionOutputs
+
+class LabelDetectionExecutor(Config):
+    name: Literal["LabelDetection"] = "LabelDetection"
+    value: Union[LabelDetectionRequest, LabelDetectionResponse]
+    type: Literal["object"] = "object"
+    field: Literal["option"] = "option"
+
+    class Config:
+        title = "label Detection"
+        json_schema_extra = {
+            "target": {
+                "value": 0
+            }
+        }
+
+
+class ImagePropertiesInputs(Inputs):
+    inputImage: InputImage
+
+class ImagePropertiesConfigs(Configs):
+    tokenSelection: TokenSelection
+
+class ImagePropertiesOutputs(Outputs):
+    outputColors: OutputColors
+
+class ImagePropertiesRequest(Request):
+    inputs: Optional[ImagePropertiesInputs]
+    configs: ImagePropertiesConfigs
+
+    class Config:
+        json_schema_extra = {
+            "target": "configs"
+        }
+
+class ImagePropertiesResponse(Response):
+    outputs: ImagePropertiesOutputs
+
+class ImagePropertiesExecutor(Config):
+    name: Literal["ImageProperties"] = "ImageProperties"
+    value: Union[ImagePropertiesRequest, ImagePropertiesResponse]
+    type: Literal["object"] = "object"
+    field: Literal["option"] = "option"
+
+    class Config:
+        title = "Image Properties"
+        json_schema_extra = {
+            "target": {
+                "value": 0
+            }
+        }
 
 class FaceDetectionInputs(Inputs):
     inputImage: InputImage
@@ -452,7 +555,7 @@ class TextDetectionExecutor(Config):
 
 class ConfigExecutor(Config):
     name: Literal["ConfigExecutor"] = "ConfigExecutor"
-    value: Union[TextDetectionExecutor,CropHintsExecutor,FaceDetectionExecutor,WebDetectionExecutor,ObjectDetectionExecutor,SafeSearchExecutor,TextDetectFileExecutor]
+    value: Union[TextDetectionExecutor,CropHintsExecutor,FaceDetectionExecutor,ImagePropertiesExecutor,LabelDetectionExecutor,WebDetectionExecutor,ObjectDetectionExecutor,SafeSearchExecutor,TextDetectFileExecutor]
     type: Literal["executor"] = "executor"
     field: Literal["dependentDropdownlist"] = "dependentDropdownlist"
 

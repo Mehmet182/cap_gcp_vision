@@ -6,6 +6,8 @@ from capsules.GcpVision.src.models.PackageModel import PackageModel, PackageConf
 from capsules.GcpVision.src.models.PackageModel import TextDetectionOutputs, TextDetectionResponse, TextDetectionExecutor
 from capsules.GcpVision.src.models.PackageModel import CropHintsOutputs, CropHintsResponse, CropHintsExecutor
 from capsules.GcpVision.src.models.PackageModel import FaceDetectionOutputs, FaceDetectionResponse, FaceDetectionExecutor
+from capsules.GcpVision.src.models.PackageModel import ImagePropertiesOutputs, ImagePropertiesResponse, ImagePropertiesExecutor,OutputColors
+from capsules.GcpVision.src.models.PackageModel import LabelDetectionOutputs, LabelDetectionResponse, LabelDetectionExecutor
 from capsules.GcpVision.src.models.PackageModel import ObjectDetectionOutputs, ObjectDetectionResponse,ObjectDetectionExecutor
 from capsules.GcpVision.src.models.PackageModel import SafeSearchOutputs, SafeSearchResponse,SafeSearchExecutor,OutputSafeSearch
 from capsules.GcpVision.src.models.PackageModel import WebDetectionOutputs, WebDetectionResponse,WebDetectionExecutor,OutputWebSearch
@@ -40,6 +42,28 @@ def build_response_face_detection(context):
     faceDetectionResponse = FaceDetectionResponse(outputs=faceDetectionOutputs)
     faceDetectionExecutor = FaceDetectionExecutor(value=faceDetectionResponse)
     executor = ConfigExecutor(value=faceDetectionExecutor)
+    packageConfigs = PackageConfigs(executor=executor)
+    package = PackageHelper(packageModel=PackageModel, packageConfigs=packageConfigs)
+    packageModel = package.build_model(context)
+    return packageModel
+
+def build_response_image_properties(context):
+    outputDetections = OutputColors(value=context.dominant_colors)
+    imagePropertiesOutputs = ImagePropertiesOutputs(outputDetections=outputDetections)
+    imagePropertiesResponse = ImagePropertiesResponse(outputs=imagePropertiesOutputs)
+    imagePropertiesExecutor = ImagePropertiesExecutor(value=imagePropertiesResponse)
+    executor = ConfigExecutor(value=imagePropertiesExecutor)
+    packageConfigs = PackageConfigs(executor=executor)
+    package = PackageHelper(packageModel=PackageModel, packageConfigs=packageConfigs)
+    packageModel = package.build_model(context)
+    return packageModel
+
+def build_response_label_detection(context):
+    outputDetections = OutputDetections(value=context.detections)
+    labelDetectionOutputs = LabelDetectionOutputs(outputDetections=outputDetections)
+    labelDetectionResponse = LabelDetectionResponse(outputs=labelDetectionOutputs)
+    labelDetectionExecutor = LabelDetectionExecutor(value=labelDetectionResponse)
+    executor = ConfigExecutor(value=labelDetectionExecutor)
     packageConfigs = PackageConfigs(executor=executor)
     package = PackageHelper(packageModel=PackageModel, packageConfigs=packageConfigs)
     packageModel = package.build_model(context)
